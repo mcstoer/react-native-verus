@@ -2,7 +2,10 @@
 /android/build/
 /ios/libzcashlc.xcframework/
 /ios/ZCashLightClientKit/
+/ios/zcashlc.h
+/ios/.prepack-stamp
 /lib/
+/scripts-built/
 /tmp/
 
 # Package managers:
