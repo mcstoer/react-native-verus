@@ -1,0 +1,9 @@
+{
+  "platforms": ["ios", "android"],
+  "ios": {
+    "modules": ["VerusCryptoModule"]
+  },
+  "android": {
+    "modules": ["com.verusmobile.veruscrypto.VerusCryptoModule"]
+  }
+}

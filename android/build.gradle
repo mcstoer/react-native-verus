@@ -1,69 +1,26 @@
-buildscript {
-  def kotlinVersion = rootProject.ext.has('kotlinVersion')
-    ? rootProject.ext.get('kotlinVersion')
-    : '1.8.22'
-
-  repositories {
-    mavenCentral()
-    mavenLocal()
-    google()
-  }
-  dependencies {
-    classpath 'com.android.tools.build:gradle:7.3.1'
-    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
-
-  }
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
 }
 
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
-
-def safeExtGet(prop, fallback) {
-  rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
-}
+group = 'com.verusmobile.veruscrypto'
+version = '0.7.0'
 
 android {
-  compileSdkVersion safeExtGet('compileSdkVersion', 32)
+  namespace "com.verusmobile.veruscrypto"
   defaultConfig {
-    minSdkVersion safeExtGet('minSdkVersion', 27)
-    targetSdkVersion safeExtGet('targetSdkVersion', 32)
-    multiDexEnabled true
+    versionCode 1
+    versionName "0.7.0"
   }
-  lintOptions {
-    abortOnError false
-  }
-  namespace 'com.verusmobile.veruslightclient'
-}
-
-kotlin {
-  jvmToolchain(17)
-}
-
-repositories {
-  mavenLocal()
-  maven {
-    url('../node_modules/react-native/android')
-  }
-  google()
-  mavenCentral()
 }
 
 dependencies {
-  implementation 'com.facebook.react:react-native:+'
-
-  // Compiler plugin for Room annotation support:
-  kapt 'androidx.room:room-compiler:2.3.0'
-
-  implementation 'androidx.appcompat:appcompat:1.4.1'
-  implementation 'androidx.paging:paging-runtime-ktx:2.1.2'
-
-  // you must clone github.com/VerusCoin/verus-android-wallet-sdk,
-  // and run: './gradlew publishToMavenLocal' from repo root,
-  // for gradle to find the two dependencies below
+  /*
+   * Not published to JitPack or Maven Central. The consuming app must serve
+   * these from a vendored Maven repo built from
+   * VerusCoin/verus-android-wallet-sdk@f725d03c, and pin
+   * com.github.VerusCoin:verus-android-backend to the 16 KB build
+   * 2.1.2-16k.1. See README.md.
+   */
   implementation 'com.github.VerusCoin:verus-android-sdk:2.1.2'
-  implementation 'com.github.VerusCoin:verus-android-sdk-incubator:2.1.2'
-
-  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
-  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3"
 }

@@ -1,11 +1,11 @@
 {
   "name": "react-native-verus",
-  "version": "0.6.10",
-  "description": "Verus library for React Native",
-  "homepage": "https://github.com/EdgeApp/react-native-zcash",
+  "version": "0.7.0-verussky.1",
+  "description": "Verus Sapling encryption (verus_zfunc) for React Native, as an Expo module",
+  "homepage": "https://github.com/mcstoer/react-native-verus",
   "repository": {
     "type": "git",
-    "url": "git@github.com:EdgeApp/react-native-zcash.git"
+    "url": "git+https://github.com/mcstoer/react-native-verus.git"
   },
   "license": "MIT",
   "author": "Airbitz, Inc.",
@@ -15,74 +15,39 @@
     "Matthew Piché <matthew@edge.app>",
     "Kevin Gorham <kevin.gorham@z.cash>"
   ],
-  "main": "lib/veruslightclient.rn.js",
-  "types": "lib/src/react-native.d.ts",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "files": [
     "/android/build.gradle",
     "/android/src/",
     "/CHANGELOG.md",
+    "/expo-module.config.json",
     "/ios/",
-    "/lib/",
+    "/ios-artifacts.lock",
     "/LICENSE",
     "/package.json",
     "/react-native-verus.podspec",
     "/README.md",
-    "/src/",
-    "/scripts",
-    "/yarn.lock"
+    "/scripts/",
+    "/src/"
   ],
   "scripts": {
-    "build": "(cd android && gradle assemble -DheapDumpOnOutOfMemoryError=false)",
+    "fetch-ios-artifacts": "./scripts/fetch-ios-artifacts.sh",
     "fix-kotlin": "ktlint --format 'android/src/**/*.kt'",
-    "fix-swift": "swift-format format -i ios/VerusLightClient.swift",
-    "fix": "npm run lint -- --fix",
-    "lint": "eslint .",
-    "precommit": "lint-staged && npm run prepare",
+    "fix-swift": "swift-format format -i ios/VerusCryptoModule.swift",
     "prepack": "node -r sucrase/register ./scripts/prepack.ts",
-    "prepare": "husky install && rimraf lib && rollup -c && tsc",
-    "update-checkpoints": "node -r sucrase/register scripts/updateCheckpoints.ts",
+    "typecheck": "tsc --noEmit",
     "update-sources": "node -r sucrase/register ./scripts/updateSources.ts"
   },
-  "lint-staged": {
-    "*.{js,ts}": "eslint"
-  },
-  "dependencies": {
-    "biggystring": "4.2.3",
-    "rfc4648": "1.5.4"
-  },
   "devDependencies": {
-    "@babel/core": "7.25.7",
-    "@babel/plugin-transform-object-assign": "7.27.1",
-    "@babel/preset-env": "7.28.3",
-    "@babel/preset-typescript": "7.27.1",
-    "@grpc/grpc-js": "1.13.4",
-    "@types/node": "16.18.126",
-    "@types/react-native": "0.68.20",
-    "@typescript-eslint/eslint-plugin": "2.34.0",
-    "@typescript-eslint/parser": "3.10.1",
-    "babel-eslint": "10.1.0",
+    "@types/node": "22.15.30",
     "disklet": "0.4.6",
-    "eslint": "7.32.0",
-    "eslint-config-standard-kit": "0.14.6",
-    "eslint-plugin-flowtype": "5.10.0",
-    "eslint-plugin-import": "2.32.0",
-    "eslint-plugin-prettier": "3.4.1",
-    "eslint-plugin-promise": "4.3.1",
-    "eslint-plugin-simple-import-sort": "5.0.3",
-    "eslint-plugin-standard": "4.1.0",
-    "husky": "7.0.4",
-    "lint-staged": "10.5.4",
-    "prettier": "2.8.8",
-    "rimraf": "3.0.2",
-    "rollup": "2.79.2",
-    "rollup-plugin-babel": "4.4.0",
-    "rollup-plugin-filesize": "9.1.2",
-    "rollup-plugin-flow-entry": "0.3.6",
-    "rollup-plugin-node-resolve": "5.2.0",
+    "expo-modules-core": "58.0.26",
     "sucrase": "3.35.0",
-    "typescript": "4.8.4"
+    "typescript": "5.9.3"
   },
   "peerDependencies": {
-    "react-native": "0.71.19"
+    "expo-modules-core": "*",
+    "react-native": "*"
   }
 }

@@ -5,13 +5,10 @@
 // pods. The rebuild needs macOS with a full Xcode install, and is skipped when
 // impossible or already up to date.
 //
-// The podspec's `prepare_command` runs this too, transpiled, so that whether a
-// tree counts as built is decided in one place instead of two.
-//
 // RNV_BUILD_IOS=0 always skips; RNV_BUILD_IOS=1 rebuilds even if present.
 
 import { execSync } from 'child_process'
-import { createHash, Hash } from 'crypto'
+import { createHash } from 'crypto'
 import {
   existsSync,
   readdirSync,
@@ -22,22 +19,16 @@ import {
 } from 'fs'
 import { join } from 'path'
 
-import { checkpointPath } from './copyCheckpoints'
-
 const root = join(__dirname, '..')
 const xcframework = join(root, 'ios/libzcashlc.xcframework')
 const swiftSources = join(root, 'ios/ZCashLightClientKit')
 const rustHeader = join(root, 'ios/zcashlc.h')
 const stampFile = join(root, 'ios/.prepack-stamp')
 
-// What the artifacts are built out of, so that changing any of it makes what is
-// on disk stale. The pinned commits live in updateSources.ts and both scripts
-// rewrite what they copy; the checkpoints are copied in as-is, so without them
-// here an `update-checkpoints` run would leave the iOS bundle on the old ones.
-// A checkpoint refresh therefore costs a full rebuild, since `update-sources`
-// runs `make clean` — pass RNV_BUILD_IOS=0 to put that off.
-const inputFiles = ['scripts/updateSources.ts', 'scripts/copyCheckpoints.ts']
-const inputDirs = [checkpointPath]
+// What the artifacts are built out of, so that changing it makes what is on
+// disk stale. The pinned commits live in updateSources.ts, which also rewrites
+// what it copies.
+const inputFiles = ['scripts/updateSources.ts']
 
 function isNonEmptyDir(path: string): boolean {
   return existsSync(path) && readdirSync(path).length > 0
@@ -54,23 +45,9 @@ function hasArtifacts(): boolean {
   )
 }
 
-// Hashes names as well as contents, so an added, removed or renamed file
-// registers the same as an edited one. The sort is there because `readdirSync`
-// returns whatever order the filesystem gives it:
-function hashTree(hash: Hash, path: string): void {
-  if (!existsSync(path)) return
-  const entries = readdirSync(path, { withFileTypes: true })
-  for (const entry of entries.sort((a, b) => (a.name < b.name ? -1 : 1))) {
-    hash.update(entry.name)
-    if (entry.isDirectory()) hashTree(hash, join(path, entry.name))
-    else hash.update(readFileSync(join(path, entry.name)))
-  }
-}
-
 function inputHash(): string {
   const hash = createHash('sha256')
   for (const file of inputFiles) hash.update(readFileSync(join(root, file)))
-  for (const dir of inputDirs) hashTree(hash, join(root, dir))
   return hash.digest('hex')
 }
 
@@ -125,9 +102,6 @@ function main(): void {
     )
   }
 
-  // `update-checkpoints` is not run here: it queries a live lightwalletd and
-  // rewrites committed assets. `update-sources` copies the checkpoints across.
-  //
   // Drop the stamp first, so an interrupted build leaves the artifacts marked
   // unusable rather than passing for the ones the current scripts describe:
   rmSync(stampFile, { force: true })

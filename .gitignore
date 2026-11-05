@@ -4,6 +4,8 @@
 /ios/ZCashLightClientKit/
 /ios/zcashlc.h
 /ios/.prepack-stamp
+/ios/.artifacts-sha256
+/ios-artifacts.tar.gz
 /lib/
 /scripts-built/
 /tmp/

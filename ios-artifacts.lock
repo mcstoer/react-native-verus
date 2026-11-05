@@ -1,0 +1,6 @@
+# The prebuilt iOS inputs (libzcashlc.xcframework, ZCashLightClientKit/,
+# zcashlc.h) that scripts/fetch-ios-artifacts.sh installs into ios/.
+# Produced by .github/workflows/ios-artifacts.yml; paste its output here.
+# Both values are empty until the first CI build.
+IOS_ARTIFACTS_URL=
+IOS_ARTIFACTS_SHA256=

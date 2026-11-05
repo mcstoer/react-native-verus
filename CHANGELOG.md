@@ -1,5 +1,14 @@
 # React Native Zcash
 
+## 0.7.0-verussky.1
+
+- Breaking: replaced the legacy `VerusLightClient` bridge module with the `VerusCrypto` Expo module (New Architecture native, no interop layer).
+- Breaking: removed the light-wallet API. Only `zGetEncryptionAddress`, `encryptVerusData` and `decryptVerusData` remain.
+- iOS: seeds are decoded as raw hex instead of being forced through the mnemonic path.
+- iOS: removed `prepare_command` and the checkpoint resource bundles; prebuilt artifacts come from the `iOS artifacts` workflow and `scripts/fetch-ios-artifacts.sh`.
+- Android: replaced the build script with the Expo module template; removed the checkpoint assets and the `sdk-incubator` dependency.
+- Removed the `prepare` script, rollup, husky and the runtime dependencies.
+
 ## Unreleased
 
 ## 0.6.10 (2024-03-27)

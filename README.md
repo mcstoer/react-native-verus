@@ -1,71 +1,113 @@
-# react-native-zcash
+# react-native-verus (VerusSky fork)
 
-This library packages the ZCashLightClientKit for use on React Native.
+A VerusSky-only fork of [`VerusCoin/react-native-verus`](https://github.com/VerusCoin/react-native-verus)
+v0.6.10 (`971a75c`). The legacy `VerusLightClient` bridge module is replaced by an
+[Expo module](https://docs.expo.dev/modules/overview/), `VerusCrypto`, that exposes only the three
+Verus Sapling encryption functions from `verus_zfunc`. Verus's native SDKs and binaries stay
+underneath; no crypto is implemented here.
 
-## Usage
+Because it is an Expo module it runs natively on the React Native New Architecture (bridgeless),
+with no dependency on the legacy-module interop layer.
 
-First, add this library to your React Native app using NPM or Yarn, and run `pod install` as necessary to integrate it with your app's native code.
+The light-wallet API (sync, balances, sending, events) is gone. Use upstream if you need it.
 
-If you encounter errors during `pod install`, you may need to add the following code to the `target` section of your Podfile:
+## API
 
-```ruby
-# Zcash transitive dependencies:
-pod 'CGRPCZlib', :modular_headers => true
-pod 'CNIOAtomics', :modular_headers => true
-pod 'CNIOBoringSSL', :modular_headers => true
-pod 'CNIOBoringSSLShims', :modular_headers => true
-pod 'CNIODarwin', :modular_headers => true
-pod 'CNIOHTTPParser', :modular_headers => true
-pod 'CNIOLinux', :modular_headers => true
-pod 'CNIOWindows', :modular_headers => true
+```ts
+import {
+  zGetEncryptionAddress,
+  encryptVerusData,
+  decryptVerusData
+} from 'react-native-verus'
+
+const keys = await zGetEncryptionAddress({ seedHex, fromIdHex, toIdHex })
+// { address: 'zs1...', extfvk: 'zxviews1...', ivk: '<hex>', spendingKey?: 'secret-extended-key-main1...' }
+
+const payload = await encryptVerusData(keys.address, dataHex, /* returnSsk */ true)
+// { ephemeralPublicKey: '<hex>', encryptedData: '<hex>', symmetricKey?: '<hex>' }
+
+const plaintextHex = await decryptVerusData(keys.ivk, payload.ephemeralPublicKey, payload.encryptedData, null)
 ```
 
-On the Android side, you may need to configure an explicit Kotlin version, so all your native dependencies will be compatible with one another. Simply define `kotlinVersion` in your `android/build.gradle` file:
+| Function | Inputs | Notes |
+| --- | --- | --- |
+| `zGetEncryptionAddress` | `seedHex` (32 or 64 bytes) or `extskHex` (169 bytes); optional `fromIdHex`/`toIdHex` (20 bytes), `hdIndex` (default `-1` = none), `encryptionIndex` (default `0`), `returnSecret` | Seeds are raw bytes on both platforms, never mnemonics. `hdIndex` other than `-1` together with an extsk is an error. |
+| `encryptVerusData` | `zs1...` address, data hex, `returnSsk` | |
+| `decryptVerusData` | `ivkHex` + `epkHex`, or `sskHex`; ciphertext hex | An ssk takes precedence over the ivk. |
 
-```groovy
-buildscript {
-  ext {
-    kotlinVersion = '1.8.22'
-  }
-}
+Errors reject with these codes: `ERR_VERUS_ENCRYPTION_ADDRESS`, `ERR_VERUS_ENCRYPT`,
+`ERR_VERUS_DECRYPT`, `ERR_VERUS_HEX`, `ERR_VERUS_ADDRESS`, `ERR_VERUS_KEY_LENGTH`.
+
+Callers should validate inputs before calling in, in particular reject any index of 2^31 or more:
+`verus_zfunc` panics on it, and a Rust panic across the iOS C FFI aborts the app. The Swift module
+also checks this.
+
+## Key material
+
+- **Never log** the arguments or results of these functions, in JS or native code. They carry
+  seeds, spending keys, viewing keys and symmetric keys.
+- Native code never puts inputs in error messages, and zeroes decoded key bytes once the SDK call
+  returns. Strings that crossed the bridge cannot be zeroed.
+
+## Android
+
+The module depends on `com.github.VerusCoin:verus-android-sdk:2.1.2`, which is **not published** to
+JitPack or Maven Central. The consuming app must:
+
+1. Build `VerusCoin/verus-android-wallet-sdk` at `f725d03c` (`./gradlew publishToMavenLocal`) and
+   vendor the resulting `com/github/VerusCoin/*` artifacts in a Maven-layout folder.
+2. Vendor Verus Mobile's 16 KB-page backend `verus-android-backend:2.1.2-16k.1` (from
+   `mcstoer/verus-mobile` `android/local-maven`) in the same folder, and force that version:
+   ```groovy
+   configurations.all {
+     resolutionStrategy.eachDependency { d ->
+       if (d.requested.group == 'com.github.VerusCoin' && d.requested.name == 'verus-android-backend') {
+         d.useVersion '2.1.2-16k.1'
+       }
+     }
+   }
+   ```
+3. Vendor `com.github.komputing.khash:sha256:1.1.1` and `sha256-jvm:1.1.1` too (JitPack-only
+   upstream), and serve both groups from the vendored repo with `exclusiveContent`.
+4. Enable core library desugaring in the app (`coreLibraryDesugaring
+   'com.android.tools:desugar_jdk_libs:2.0.4'`); the Verus AARs require it.
+
+## iOS
+
+The pod compiles the Verus Swift SDK sources (`ios/ZCashLightClientKit/`), the Rust header
+(`ios/zcashlc.h`) and links `ios/libzcashlc.xcframework`. These are gitignored build outputs, and
+CocoaPods never runs `prepare_command` for the `:path` pods that autolinking creates, so they must
+exist **before `pod install`**:
+
+- **Prebuilt (recommended):** run the `iOS artifacts` workflow
+  (`.github/workflows/ios-artifacts.yml`) on a macOS runner. Copy the URL and sha256 from its job
+  summary into `ios-artifacts.lock` and commit. Apps then run
+  `node_modules/react-native-verus/scripts/fetch-ios-artifacts.sh` before `pod install`; it verifies
+  the checksum and needs no Rust.
+- **From source:** on a Mac with full Xcode and `rustup`, run `RNV_BUILD_IOS=1 npm run update-sources`.
+
+The checkpoint resource bundles are no longer shipped. Only the unused light-wallet code reads
+them.
+
+## Pins
+
+| Component | Pin |
+| --- | --- |
+| Upstream fork point | `VerusCoin/react-native-verus` `971a75cdd4d2efdf0097c9f0ad379d478a6ca68f` (v0.6.10) |
+| Android SDK | `VerusCoin/verus-android-wallet-sdk` `f725d03c` (2.1.2) |
+| Android backend | `verus-android-backend` `2.1.2-16k.1` (Verus Mobile's 16 KB rebuild) |
+| `verus_zfunc` (Android backend lock) | `df9dc2d` |
+| Swift SDK | `VerusCoin/verus-swift-wallet-sdk` `f6d871b292555f849abbd7b5626fcbdc41be9333` |
+| iOS FFI | `VerusCoin/verus-lightclient-ffi` `8a1c24f4ff4fef1c73e87e79c44240210c5abe73` |
+
+The iOS pins live in `scripts/updateSources.ts`.
+
+## Installing
+
+Install by a pinned commit, never a branch:
+
+```json
+"react-native-verus": "github:mcstoer/react-native-verus#<full commit sha>"
 ```
 
-### API overview
-
-- `Tools`
-  - `deriveViewingKey`
-  - `getBirthdayHeight`
-  - `isValidAddress`
-- `makeSynchronizer`
-  - `start`
-  - `stop`
-  - `rescan`
-  - `getLatestNetworkHeight`
-  - `sendToAddress`
-  - `shieldFunds`
-  - `deriveUnifiedAddress`
-
-`Tools` contains methods that don't require a running synchronizer (with one exception, `isValidAddress` on Android which does requires any synchronizer connected to the requested network). In addition to the methods above, the following events can be subscribed to:
-
-- `BalanceEvent`- available and total transparent and shielded balances
-- `StatusEvent` - current synchronizer activity (`STOPPED`, `DISCONNECTED`, `SYNCING`, and `SYNCED`)
-- `TransactionEvent`- confirmed transactions
-- `UpdateEvent` - syncing progress and network height
-
-## Developing
-
-This library relies on a large amount of native code from other repos. To integrate this code, you must run the following script before publishing this library to NPM:
-
-```sh
-npm run update-sources
-```
-
-This script will download ZCashLightClientKit and zcash-light-client-ffi, modify them for React Native, and integrate them with our wrapper code.
-
-The `update-sources` script is also the place to make edits when upgrading any of the third-party dependencies.
-
-We also have an `update-checkpoints` command that will connect to a node and generate fresh checkpoints based on the chain state.
-
-### Source Formatting
-
-Install `ktlint` and `swift-format` using your package manager, such as `brew install ktlint swift-format`. Run `fix-swift` or `fix-kotlin` to format the native sources.
+The package has no `prepare` or `postinstall` scripts, so a git install runs nothing.

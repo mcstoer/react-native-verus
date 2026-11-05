@@ -1,0 +1,58 @@
+name: iOS artifacts
+
+# Builds the gitignored iOS inputs (Rust XCFramework, copied Swift SDK sources,
+# zcashlc.h) on macOS and publishes them as a release asset. Copy the URL and
+# sha256 from the job summary into ios-artifacts.lock.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install script dependencies
+        run: npm install --ignore-scripts --no-package-lock --no-audit --no-fund --legacy-peer-deps
+
+      - name: Build the iOS sources and XCFramework
+        env:
+          RNV_BUILD_IOS: '1'
+        run: npm run update-sources
+
+      - name: Package
+        id: package
+        run: |
+          set -euo pipefail
+          test -s ios/zcashlc.h
+          tar -czf ios-artifacts.tar.gz -C ios libzcashlc.xcframework ZCashLightClientKit zcashlc.h
+          sha="$(shasum -a 256 ios-artifacts.tar.gz | cut -d' ' -f1)"
+          echo "sha256=$sha" >> "$GITHUB_OUTPUT"
+          echo "tag=ios-artifacts-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.package.outputs.tag }}
+          SHA256: ${{ steps.package.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" ios-artifacts.tar.gz \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
+            --notes "iOS build inputs for $GITHUB_SHA. sha256: $SHA256"
+          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/ios-artifacts.tar.gz"
+          {
+            echo "### ios-artifacts.lock"
+            echo '```'
+            echo "IOS_ARTIFACTS_URL=$url"
+            echo "IOS_ARTIFACTS_SHA256=$SHA256"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

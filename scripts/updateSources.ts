@@ -8,8 +8,6 @@ import { deepList, justFiles, makeNodeDisklet, navigateDisklet } from 'disklet'
 import { existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
 
-import { copyCheckpoints } from './copyCheckpoints'
-
 const disklet = makeNodeDisklet(join(__dirname, '../'))
 const tmp = join(__dirname, '../tmp')
 
@@ -18,7 +16,6 @@ async function main(): Promise<void> {
   await downloadSources()
   await rebuildXcframework()
   await copySwift()
-  await copyCheckpoints(disklet)
 }
 
 function downloadSources(): void {
@@ -102,7 +99,9 @@ async function copySwift(): Promise<void> {
       // so we don't need to import this externally:
       .replace('import libzcashlc', '')
       // The Swift package manager synthesizes a "Bundle.module" accessor,
-      // but with CocoaPods we need to load things manually:
+      // but with CocoaPods we need to load things manually. The checkpoint
+      // bundles are no longer shipped (this pod only exposes encryption), so
+      // these lookups are only reached by the unused light-wallet code:
       .replace(
         'Bundle.module.bundleURL.appendingPathComponent("checkpoints/mainnet/")',
         'Bundle.main.url(forResource: "zcash-mainnet", withExtension: "bundle")!'
