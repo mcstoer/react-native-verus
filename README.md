@@ -79,11 +79,14 @@ The pod compiles the Verus Swift SDK sources (`ios/ZCashLightClientKit/`), the R
 CocoaPods never runs `prepare_command` for the `:path` pods that autolinking creates, so they must
 exist **before `pod install`**:
 
-- **Prebuilt (recommended):** run the `iOS artifacts` workflow
-  (`.github/workflows/ios-artifacts.yml`) on a macOS runner. Copy the URL and sha256 from its job
-  summary into `ios-artifacts.lock` and commit. From then on, `pod install` fetches and verifies
-  the archive itself (the podspec runs `scripts/fetch-ios-artifacts.sh` when the files are
-  missing), so app builds need no Rust.
+- **Prebuilt (default):** `ios-artifacts.lock` pins an archive built by the `iOS artifacts`
+  workflow (`.github/workflows/ios-artifacts.yml`, about 16 minutes on `macos-26`). `pod install`
+  fetches and verifies it itself (the podspec runs `scripts/fetch-ios-artifacts.sh` when the files
+  are missing), so app builds need no Rust. The current pin is release
+  `ios-artifacts-e233cdd97fd5-41972430467`.
+- **Updating the pin:** the workflow runs on pushes to `react-native-new-architecture` that change
+  `scripts/updateSources.ts` or the workflow itself, and by hand from the Actions tab once the file
+  is on the default branch. Copy the two lines from its job summary into `ios-artifacts.lock`.
 - **From source:** on a Mac with full Xcode and `rustup`, run `RNV_BUILD_IOS=1 npm run update-sources`.
   The fetch script keeps a locally built set unless `RNV_FORCE_FETCH=1`.
 

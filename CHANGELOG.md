@@ -7,7 +7,7 @@
 - Breaking: replaced the legacy `VerusLightClient` bridge module with the `VerusCrypto` Expo module (New Architecture native, no interop layer).
 - Breaking: removed the light-wallet API. Only `zGetEncryptionAddress`, `encryptVerusData` and `decryptVerusData` remain.
 - iOS: seeds are decoded as raw hex instead of being forced through the mnemonic path.
-- iOS: removed `prepare_command` and the checkpoint resource bundles; prebuilt artifacts come from the `iOS artifacts` workflow and are fetched by checksum when the podspec is evaluated; `pod install` fails if they are still missing.
+- iOS: removed `prepare_command` and the checkpoint resource bundles; prebuilt artifacts come from the `iOS artifacts` workflow and are fetched by checksum when the podspec is evaluated; `pod install` fails if they are still missing. The lock pins the first CI build (run 41972430467).
 - Android: replaced the build script with the Expo module template; removed the checkpoint assets and the `sdk-incubator` dependency.
 - Removed the `prepare` script, rollup, husky and the runtime dependencies.
 
