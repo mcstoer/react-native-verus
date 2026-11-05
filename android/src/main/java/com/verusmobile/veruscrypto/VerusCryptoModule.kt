@@ -10,11 +10,14 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.kotlin.records.Field
 import expo.modules.kotlin.records.Record
+import expo.modules.kotlin.types.OptimizedRecord
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Options for zGetEncryptionAddress. Every byte value is hex. Exactly one of
  * seedHex and extskHex must be set.
  */
+@OptimizedRecord
 class EncryptionAddressOptions : Record {
   /** 32 or 64 byte seed. Raw bytes only, never a mnemonic. */
   @Field var seedHex: String? = null
@@ -70,6 +73,9 @@ class VerusCryptoModule : Module() {
           .toMap()
       } catch (e: CodedException) {
         throw e
+      } catch (e: CancellationException) {
+        // Let coroutine cancellation propagate untouched.
+        throw e
       } catch (e: Exception) {
         throw CodedException(
           "ERR_VERUS_ENCRYPTION_ADDRESS",
@@ -89,6 +95,9 @@ class VerusCryptoModule : Module() {
           .encryptVerusData(decodeSaplingAddress(address), data, returnSsk)
           .toMap()
       } catch (e: CodedException) {
+        throw e
+      } catch (e: CancellationException) {
+        // Let coroutine cancellation propagate untouched.
         throw e
       } catch (e: Exception) {
         throw CodedException("ERR_VERUS_ENCRYPT", e.message ?: "Failed to encrypt data", e)
@@ -113,6 +122,9 @@ class VerusCryptoModule : Module() {
           out.fill(0)
         }
       } catch (e: CodedException) {
+        throw e
+      } catch (e: CancellationException) {
+        // Let coroutine cancellation propagate untouched.
         throw e
       } catch (e: Exception) {
         throw CodedException("ERR_VERUS_DECRYPT", e.message ?: "Failed to decrypt data", e)
@@ -188,8 +200,8 @@ class VerusCryptoModule : Module() {
       }
       val out = ByteArray(hex.length / 2)
       for (i in out.indices) {
-        val hi = Character.digit(hex[i * 2], 16)
-        val lo = Character.digit(hex[i * 2 + 1], 16)
+        val hi = nibble(hex[i * 2])
+        val lo = nibble(hex[i * 2 + 1])
         if (hi < 0 || lo < 0) {
           out.fill(0)
           throw CodedException("ERR_VERUS_HEX", "$name: invalid hex character", null)
@@ -197,6 +209,14 @@ class VerusCryptoModule : Module() {
         out[i] = ((hi shl 4) or lo).toByte()
       }
       return out
+    }
+
+    /** ASCII-only, unlike Character.digit, which also accepts other Unicode digits. */
+    private fun nibble(c: Char): Int = when (c) {
+      in '0'..'9' -> c - '0'
+      in 'a'..'f' -> c - 'a' + 10
+      in 'A'..'F' -> c - 'A' + 10
+      else -> -1
     }
 
     fun encode(bytes: ByteArray): String {

@@ -33,8 +33,6 @@
   ],
   "scripts": {
     "fetch-ios-artifacts": "./scripts/fetch-ios-artifacts.sh",
-    "fix-kotlin": "ktlint --format 'android/src/**/*.kt'",
-    "fix-swift": "swift-format format -i ios/VerusCryptoModule.swift",
     "prepack": "node -r sucrase/register ./scripts/prepack.ts",
     "typecheck": "tsc --noEmit",
     "update-sources": "node -r sucrase/register ./scripts/updateSources.ts"

@@ -4,13 +4,13 @@ plugins {
 }
 
 group = 'com.verusmobile.veruscrypto'
-version = '0.7.0'
+version = '0.7.0-verussky.1'
 
 android {
   namespace "com.verusmobile.veruscrypto"
   defaultConfig {
     versionCode 1
-    versionName "0.7.0"
+    versionName "0.7.0-verussky.1"
   }
 }
 

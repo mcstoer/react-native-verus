@@ -51,9 +51,25 @@ private func wrapErrors<T>(_ code: String, _ description: String, _ body: () thr
     return try body()
   } catch let error as Exception {
     throw error
+  } catch let error as ZcashError {
+    throw verusError(code, "\(description): \(zcashReason(error))")
   } catch {
     throw verusError(code, description, error)
   }
+}
+
+/*
+ * ZcashError has no LocalizedError conformance, so as a cause it would only
+ * show "The operation couldn't be completed". Use its message and code, plus
+ * the Rust error string that the rust* cases carry, to match what Android
+ * forwards. The FFI's error strings hold lengths only, never key bytes.
+ */
+private func zcashReason(_ error: ZcashError) -> String {
+  var reason = "\(error.message) (\(error.code.rawValue))"
+  if let rust = Mirror(reflecting: error).children.first?.value as? String, !rust.isEmpty {
+    reason += ": \(rust)"
+  }
+  return reason
 }
 
 /*
@@ -61,12 +77,12 @@ private func wrapErrors<T>(_ code: String, _ description: String, _ body: () thr
  * copy-on-write and leave the original buffer untouched.
  */
 private func zero(_ bytes: inout [UInt8]?) {
-  bytes?.withUnsafeMutableBytes { $0.initializeMemory(as: UInt8.self, repeating: 0) }
+  _ = bytes?.withUnsafeMutableBytes { $0.initializeMemory(as: UInt8.self, repeating: 0) }
   bytes = nil
 }
 
 private func zero(_ bytes: inout [UInt8]) {
-  bytes.withUnsafeMutableBytes { $0.initializeMemory(as: UInt8.self, repeating: 0) }
+  _ = bytes.withUnsafeMutableBytes { $0.initializeMemory(as: UInt8.self, repeating: 0) }
 }
 
 /// Hex decoder whose errors never echo the input.

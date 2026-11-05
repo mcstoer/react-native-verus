@@ -3,17 +3,26 @@ require "json"
 package = JSON.parse(File.read(File.join(__dir__, "package.json")))
 
 # Encryption-only Expo module over the Verus Swift SDK. The SDK sources, the
-# Rust header and the XCFramework are gitignored build outputs: CocoaPods never
-# runs prepare_command for the :path pods that autolinking creates, so they
-# must be in ios/ before `pod install`. Run scripts/fetch-ios-artifacts.sh to
-# download the CI-built set pinned in ios-artifacts.lock, or build them on a
-# Mac with `RNV_BUILD_IOS=1 npm run update-sources`.
-missing = ["ios/libzcashlc.xcframework", "ios/ZCashLightClientKit", "ios/zcashlc.h"].reject do |path|
-  File.exist?(File.join(__dir__, path))
+# Rust header and the XCFramework are gitignored build outputs. CocoaPods never
+# runs prepare_command for the :path pods that autolinking creates, but it does
+# evaluate this file, so the fetch runs from here: it installs the CI-built set
+# pinned in ios-artifacts.lock after checking its sha256. To build them from
+# source instead, run `RNV_BUILD_IOS=1 npm run update-sources` on a Mac.
+ios_artifacts = ["ios/libzcashlc.xcframework", "ios/ZCashLightClientKit", "ios/zcashlc.h"]
+missing_ios_artifacts = lambda do
+  ios_artifacts.reject { |path| File.exist?(File.join(__dir__, path)) }
 end
-unless missing.empty?
-  Pod::UI.warn "[react-native-verus] Missing #{missing.join(', ')}. " \
-    "Run node_modules/react-native-verus/scripts/fetch-ios-artifacts.sh before pod install."
+unless missing_ios_artifacts.call.empty?
+  fetch = File.join(__dir__, "scripts", "fetch-ios-artifacts.sh")
+  Pod::UI.puts "[react-native-verus] Fetching prebuilt iOS artifacts..."
+  system("bash", fetch) || Pod::UI.warn("[react-native-verus] #{fetch} failed")
+end
+missing = missing_ios_artifacts.call
+unless missing.empty? || ENV["RNV_ALLOW_MISSING_IOS_ARTIFACTS"] == "1"
+  raise "[react-native-verus] Missing #{missing.join(', ')}. Fill ios-artifacts.lock " \
+    "from the 'iOS artifacts' workflow, or build them on a Mac with " \
+    "`RNV_BUILD_IOS=1 npm run update-sources`. Set RNV_ALLOW_MISSING_IOS_ARTIFACTS=1 " \
+    "to skip this check (the app will not compile)."
 end
 
 Pod::Spec.new do |s|
@@ -52,7 +61,6 @@ Pod::Spec.new do |s|
 
   s.dependency "ExpoModulesCore"
   # Needed by the copied Swift SDK sources, not by VerusCryptoModule itself.
-  s.dependency "MnemonicSwift", "~> 2.0"
   s.dependency "gRPC-Swift", "~> 1.8"
   s.dependency "SQLite.swift", "~> 0.12"
 end

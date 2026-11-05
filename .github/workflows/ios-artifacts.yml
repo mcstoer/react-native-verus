@@ -32,10 +32,13 @@ jobs:
         run: |
           set -euo pipefail
           test -s ios/zcashlc.h
-          tar -czf ios-artifacts.tar.gz -C ios libzcashlc.xcframework ZCashLightClientKit zcashlc.h
+          # COPYFILE_DISABLE stops bsdtar adding ._* AppleDouble files, which
+          # the podspec's **/*.swift glob would otherwise pick up.
+          COPYFILE_DISABLE=1 tar -czf ios-artifacts.tar.gz -C ios libzcashlc.xcframework ZCashLightClientKit zcashlc.h
           sha="$(shasum -a 256 ios-artifacts.tar.gz | cut -d' ' -f1)"
           echo "sha256=$sha" >> "$GITHUB_OUTPUT"
-          echo "tag=ios-artifacts-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+          # The run id keeps re-runs on the same commit from colliding.
+          echo "tag=ios-artifacts-${GITHUB_SHA::12}-${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
 
       - name: Publish release asset
         env:

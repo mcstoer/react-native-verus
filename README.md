@@ -81,10 +81,14 @@ exist **before `pod install`**:
 
 - **Prebuilt (recommended):** run the `iOS artifacts` workflow
   (`.github/workflows/ios-artifacts.yml`) on a macOS runner. Copy the URL and sha256 from its job
-  summary into `ios-artifacts.lock` and commit. Apps then run
-  `node_modules/react-native-verus/scripts/fetch-ios-artifacts.sh` before `pod install`; it verifies
-  the checksum and needs no Rust.
+  summary into `ios-artifacts.lock` and commit. From then on, `pod install` fetches and verifies
+  the archive itself (the podspec runs `scripts/fetch-ios-artifacts.sh` when the files are
+  missing), so app builds need no Rust.
 - **From source:** on a Mac with full Xcode and `rustup`, run `RNV_BUILD_IOS=1 npm run update-sources`.
+  The fetch script keeps a locally built set unless `RNV_FORCE_FETCH=1`.
+
+If the files are still missing, `pod install` fails with a message saying what to do. Set
+`RNV_ALLOW_MISSING_IOS_ARTIFACTS=1` to skip that check (the app will then not compile).
 
 The checkpoint resource bundles are no longer shipped. Only the unused light-wallet code reads
 them.
