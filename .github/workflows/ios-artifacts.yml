@@ -3,8 +3,16 @@ name: iOS artifacts
 # Builds the gitignored iOS inputs (Rust XCFramework, copied Swift SDK sources,
 # zcashlc.h) on macOS and publishes them as a release asset. Copy the URL and
 # sha256 from the job summary into ios-artifacts.lock.
+#
+# Manual runs need this file on the default branch. Until then, a push to the
+# working branch that touches the build inputs runs it too.
 on:
   workflow_dispatch:
+  push:
+    branches: [react-native-new-architecture]
+    paths:
+      - scripts/updateSources.ts
+      - .github/workflows/ios-artifacts.yml
 
 permissions:
   contents: write
