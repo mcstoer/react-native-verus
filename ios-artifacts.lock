@@ -1,6 +1,6 @@
 # The prebuilt iOS inputs (libzcashlc.xcframework, ZCashLightClientKit/,
 # zcashlc.h) that scripts/fetch-ios-artifacts.sh installs into ios/.
 # Produced by .github/workflows/ios-artifacts.yml; paste its output here.
-# Both values are empty until the first CI build.
-IOS_ARTIFACTS_URL=
-IOS_ARTIFACTS_SHA256=
+# Built by run 41972430467 from commit e233cdd (2026-11-05).
+IOS_ARTIFACTS_URL=https://github.com/mcstoer/react-native-verus/releases/download/ios-artifacts-e233cdd97fd5-41972430467/ios-artifacts.tar.gz
+IOS_ARTIFACTS_SHA256=4b040bbd97d9cd9fd0f4e237ed0c74e2095b2dcedfff4b359c3ed8a842e36e20
